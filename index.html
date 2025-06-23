@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odidor.co - Our Global Locations</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- D3.js CDN for mapping -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #05000d; /* Very dark background for futuristic feel */
+            color: #e0b0ff; /* Light purple text */
+            overflow-x: hidden; /* Prevent horizontal scroll due to animations */
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #4b0082, #8a2be2, #a020f0); /* Purple gradient */
+        }
+        .card-bg {
+            background-color: #1a0033; /* Darker purple for cards */
+            border-radius: 1rem; /* Rounded corners */
+        }
+        .text-purple-accent {
+            color: #d1bafc; /* Lighter purple for accents */
+        }
+        .border-purple-strong {
+            border-color: #6a0dad; /* Stronger purple for borders */
+        }
+
+        /* Custom Animations */
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 5px #e0b0ff, 0 0 10px #e0b0ff, 0 0 15px #d1bafc; }
+            50% { text-shadow: 0 0 8px #e0b0ff, 0 0 15px #e0b0ff, 0 0 25px #d1bafc; }
+        }
+
+        @keyframes pulse-fade {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes border-pulse {
+            0%, 100% { box-shadow: 0 0 0 0px rgba(106, 13, 173, 0.7); }
+            50% { box-shadow: 0 0 0 5px rgba(106, 13, 173, 0); }
+        }
+
+        @keyframes background-grid {
+            from {
+                background-position: 0 0;
+            }
+            to {
+                background-position: 100% 100%;
+            }
+        }
+
+        /* Apply animations and futuristic styles */
+        .odidor-logo:hover {
+            animation: glow 1.5s infinite alternate;
+        }
+
+        .nav-link:hover {
+            animation: glow 0.8s infinite alternate;
+        }
+
+        .hero-text-pulse {
+            animation: pulse-fade 3s infinite ease-in-out;
+        }
+
+        /* Map specific styles */
+        #world-map path {
+            fill: #3a005c; /* Default country fill color (darker purple) */
+            stroke: #6a0dad; /* Country border color */
+            stroke-width: 0.5px;
+            transition: fill 0.3s ease-in-out, stroke 0.3s ease-in-out;
+        }
+        #world-map path:hover {
+            fill: #a020f0; /* Hover color (brighter, more vibrant purple) */
+            stroke: #d1bafc; /* Lighter border on hover */
+            cursor: pointer;
+            box-shadow: 0 0 10px #d1bafc; /* Subtle glow on hover */
+            z-index: 10; /* Bring hovered path to front if needed */
+        }
+
+        #world-map-container {
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 0 30px rgba(138, 43, 226, 0.5); /* Stronger glow around map */
+            animation: border-pulse 2s infinite ease-in-out; /* Pulsating border glow */
+        }
+
+        /* Card enhancements */
+        .card-bg {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            border: 2px solid #3a005c; /* Initial subtle border */
+        }
+        .card-bg:hover {
+            transform: translateY(-5px); /* Lift effect */
+            box-shadow: 0 15px 30px rgba(106, 13, 173, 0.6), 0 0 20px rgba(209, 186, 252, 0.8); /* Stronger shadow with glow */
+            border-color: #a020f0; /* Brighter border on hover */
+        }
+
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #2a0050;
+            color: #e0b0ff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            text-align: center;
+            border: 2px solid #6a0dad;
+        }
+        .message-box button {
+            background-color: #6a0dad;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+        }
+        .message-box button:hover {
+            background-color: #8a2be2;
+        }
+
+        /* Futuristic Background Grid Overlay (subtle) */
+        .body-bg-grid::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(to right, rgba(138, 43, 226, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(138, 43, 226, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px; /* Adjust grid size */
+            animation: background-grid 120s linear infinite; /* Slow, continuous movement */
+            opacity: 0.1; /* Very subtle */
+            z-index: -1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col body-bg-grid">
+
+    <!-- Header -->
+    <header class="gradient-bg p-4 shadow-2xl relative z-20">
+        <nav class="container mx-auto flex items-center justify-between">
+            <div class="text-2xl font-bold text-white rounded-lg p-2 odidor-logo">ODIDOR.CO</div>
+            <div>
+                <a href="#" class="nav-link text-white hover:text-purple-200 px-4 py-2 rounded-lg transition duration-300">Home</a>
+                <a href="#" class="nav-link text-white hover:text-purple-200 px-4 py-2 rounded-lg transition duration-300">Services</a>
+                <a href="#" class="nav-link text-white hover:text-purple-200 px-4 py-2 rounded-lg transition duration-300">About Us</a>
+                <a href="#" class="nav-link text-white px-4 py-2 bg-purple-700 rounded-lg shadow-md hover:bg-purple-800 transition duration-300">Locations</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative h-64 md:h-96 flex items-center justify-center text-center p-4">
+        <div class="absolute inset-0 bg-gradient-to-br from-purple-950 to-black opacity-80"></div>
+        <!-- Using a more abstract background image for futurism -->
+        <div class="absolute inset-0 bg-[url('https://placehold.co/1920x600/100020/6a0dad?text=Cyber+Grid+Connections')] bg-cover bg-center opacity-20"></div>
+        <div class="relative z-10 hero-text-pulse">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-white mb-4 tracking-wide drop-shadow-lg">Our Global Reach</h1>
+            <p class="text-lg md:text-xl text-purple-200 max-w-2xl mx-auto drop-shadow">
+                Connecting the world through innovative solutions, Odidor.co serves clients across every continent.
+                Discover where we make an impact.
+            </p>
+        </div>
+    </section>
+
+    <!-- Map Section -->
+    <section class="container mx-auto px-4 py-12 text-center">
+        <h2 class="text-4xl font-bold text-white mb-8 drop-shadow-md">Explore Our Global Footprint</h2>
+        <div id="world-map-container" class="w-full h-[500px] md:h-[650px] bg-card-bg rounded-xl shadow-xl border-2 border-purple-strong flex items-center justify-center overflow-hidden">
+            <!-- The map will be rendered here by D3.js -->
+            <svg id="world-map" class="w-full h-full"></svg>
+        </div>
+    </section>
+
+    <!-- Locations Section -->
+    <main class="flex-grow container mx-auto px-4 py-12">
+        <h2 class="text-4xl font-bold text-center text-white mb-12 drop-shadow-md">Where We Serve</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- North America -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">North America</h3>
+                <p class="text-purple-300 mb-4">
+                    From the tech hubs of Silicon Valley to the bustling cities of the East Coast,
+                    we provide cutting-edge services across the United States, Canada, and Mexico.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Major Cities: New York, Los Angeles, Toronto, Mexico City</li>
+                    <li>Key Sectors: Tech, Finance, Entertainment</li>
+                </ul>
+            </div>
+
+            <!-- Europe -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">Europe</h3>
+                <p class="text-purple-300 mb-4">
+                    Pioneering digital transformation across the European Union and beyond,
+                    with a strong presence in leading innovation centers.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Major Cities: London, Paris, Berlin, Amsterdam, Dublin</li>
+                    <li>Key Sectors: Fintech, Automotive, Creative Industries</li>
+                </ul>
+            </div>
+
+            <!-- Asia-Pacific -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">Asia-Pacific</h3>
+                <p class="text-purple-300 mb-4">
+                    Driving growth in the dynamic markets of Asia, Australia, and New Zealand,
+                    adapting to diverse business landscapes.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Major Cities: Tokyo, Singapore, Sydney, Shanghai, Seoul</li>
+                    <li>Key Sectors: Manufacturing, E-commerce, AI</li>
+                </ul>
+            </div>
+
+            <!-- South America -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">South America</h3>
+                <p class="text-purple-300 mb-4">
+                    Supporting emerging economies and established industries
+                    throughout South America, fostering innovation and connectivity.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Major Cities: São Paulo, Buenos Aires, Santiago, Bogotá</li>
+                    <li>Key Sectors: Agriculture, Renewable Energy, Infrastructure</li>
+                </ul>
+            </div>
+
+            <!-- Africa -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">Africa</h3>
+                <p class="text-purple-300 mb-4">
+                    Empowering businesses across the African continent with solutions
+                    tailored to local needs and global standards.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Major Cities: Johannesburg, Cairo, Lagos, Nairobi</li>
+                    <li>Key Sectors: Mobile Technology, Fintech, Healthcare</li>
+                </ul>
+            </div>
+
+            <!-- Middle East -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">Middle East</h3>
+                <p class="text-purple-300 mb-4">
+                    Contributing to the region's rapid development and technological advancement
+                    from strategic hubs across the Middle East.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Major Cities: Dubai, Riyadh, Doha, Abu Dhabi</li>
+                    <li>Key Sectors: Smart Cities, Tourism, Oil & Gas</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <!-- New Section: Our Innovation Hubs -->
+    <section class="container mx-auto px-4 py-12 text-center">
+        <h2 class="text-4xl font-bold text-white mb-12 drop-shadow-md">Our Innovation Hubs</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Hub 1: AI Research & Development -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">AI Research & Development</h3>
+                <p class="text-purple-300 mb-4">
+                    Dedicated to pushing the boundaries of artificial intelligence and machine learning,
+                    our San Francisco hub is at the forefront of future technologies.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Specialization: Deep Learning, Predictive Analytics</li>
+                    <li>Key Projects: Autonomous Systems, Data Fusion</li>
+                </ul>
+            </div>
+
+            <!-- Hub 2: Quantum Computing Center -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">Quantum Computing Center</h3>
+                <p class="text-purple-300 mb-4">
+                    Located in Cambridge, our cutting-edge facility explores the potential of quantum computing
+                    for complex problem-solving and secure communications.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Specialization: Quantum Algorithms, Cryptography</li>
+                    <li>Key Projects: Secure Blockchain, Drug Discovery</li>
+                </ul>
+            </div>
+
+            <!-- Hub 3: Sustainable Tech & Green Energy -->
+            <div class="card-bg p-6 rounded-xl shadow-xl border-2 border-purple-strong transform hover:scale-105 transition duration-300">
+                <h3 class="text-3xl font-semibold text-purple-accent mb-4">Sustainable Tech & Green Energy</h3>
+                <p class="text-purple-300 mb-4">
+                    Our Scandinavian hub in Stockholm is focused on developing eco-friendly technologies
+                    and pioneering solutions for a sustainable future.
+                </p>
+                <ul class="list-disc list-inside text-purple-400">
+                    <li>Specialization: Renewable Energy Systems, Circular Economy</li>
+                    <li>Key Projects: Smart Grids, Waste-to-Energy</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="gradient-bg p-6 text-center text-white mt-auto shadow-inner relative z-20">
+        <p>&copy; 2025 Odidor.co. All rights reserved.</p>
+        <p class="text-sm mt-2">Connecting the future, globally.</p>
+    </footer>
+
+    <script>
+        // Function to show a custom message box
+        function showMessageBox(message) {
+            const messageBox = document.createElement('div');
+            messageBox.className = 'message-box';
+            messageBox.innerHTML = `
+                <p>${message}</p>
+                <button onclick="this.parentNode.remove()">OK</button>
+            `;
+            document.body.appendChild(messageBox);
+        }
+
+        // D3.js Map Rendering
+        window.onload = function() {
+            const svg = d3.select("#world-map");
+            const mapContainer = document.getElementById('world-map-container');
+
+            const resizeMap = () => {
+                const width = mapContainer.getBoundingClientRect().width;
+                const height = mapContainer.getBoundingClientRect().height;
+
+                svg.attr("width", width).attr("height", height);
+
+                const projection = d3.geoMercator()
+                    .scale(width / (2 * Math.PI) * 0.95) // Adjusted scale for slight padding
+                    .translate([width / 2, height / 1.6]); // Adjusted vertical translation for better centering
+
+                const path = d3.geoPath().projection(projection);
+
+                svg.selectAll("path").attr("d", path);
+            };
+
+            // Using a public GeoJSON for world countries
+            // Source: https://raw.githubusercontent.com/datasets/geo-countries/main/data/countries.geojson
+            d3.json("https://raw.githubusercontent.com/datasets/geo-countries/main/data/countries.geojson").then(function(world) {
+                svg.selectAll("path")
+                    .data(world.features)
+                    .enter().append("path")
+                    .attr("d", d3.geoPath().projection(
+                        d3.geoMercator()
+                            .scale(svg.node().getBoundingClientRect().width / (2 * Math.PI) * 0.95)
+                            .translate([svg.node().getBoundingClientRect().width / 2, svg.node().getBoundingClientRect().height / 1.6])
+                    )) // Initial projection
+                    .on("click", function(event, d) {
+                        showMessageBox(`You clicked: ${d.properties.name}`);
+                    });
+
+                // Initial map render
+                resizeMap();
+
+                // Adjust map on window resize
+                window.addEventListener('resize', resizeMap);
+
+            }).catch(function(error) {
+                console.error("Error loading the GeoJSON data:", error);
+                document.getElementById('world-map-container').innerHTML = `
+                    <p class="text-red-400">Failed to load world map. Please try again later.</p>
+                `;
+            });
+        };
+    </script>
+</body>
+</html>
